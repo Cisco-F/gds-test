@@ -30,8 +30,8 @@ void timer_start(Timer* timer) {
 	gettimeofday(&(timer->start_real_time), NULL);
 }
 
-void timer_stop(Timer* tiemr) {
-	gettimeofday(&(Timer->end_real_time), NULL);
+void timer_stop(Timer* timer) {
+	gettimeofday(&(timer->end_real_time), NULL);
 }
 
 static void update_latency_info(Latency* lat,
@@ -101,7 +101,7 @@ int main() {
 	printf("Block size: %d KB\n", BLOCK_SIZE / 1024);
 	printf("Total blocks: %lu\n", total_blocks);
 
-	timer_start(&timer);
+	timer_start(timer);
 	for(int i = 0; i < total_blocks; i++) {
 		struct timeval start, end;
 		gettimeofday(&start, NULL);
@@ -109,7 +109,7 @@ int main() {
 		gettimeofday(&end, NULL);
 		update_latency_info(lat, start, end);
 	}
-	timer_stop(&timer);
+	timer_stop(timer);
 
 	struct timeval realtime_read;
 	add_timer(&realtime_read, &timer->start_real_time, &timer->end_real_time);

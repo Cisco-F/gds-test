@@ -1,1 +1,1 @@
-nvcc -o gds_seq_read gds_seq_read.c -lgds
+nvcc -o test seq_read.c -lgds
