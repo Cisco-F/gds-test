@@ -14,6 +14,7 @@
 #define BLOCK_SIZE (128 * 1024)  // 128KB
 #define FILE_SIZE (10UL * 1024 * 1024 * 1024)  // 10GB
 #define FILE_PATH "/mnt/test/testfile"
+#define O_DIRECT 040000
 
 typedef struct _timer {
 	struct timeval start_real_time;
@@ -25,6 +26,21 @@ typedef struct _timer {
 typedef struct _latency {
 	double avg, max, count;
 } Latency;
+
+typedef struct _thread_data {
+	Timer timer;
+	Latency lat;
+
+	CUfileHandle_t fh;
+	CUfileDescr_t desc;
+
+	int block_size;
+	void* dev_ptr;
+}
+
+static void init() {
+
+}
 
 void timer_start(Timer* timer) {
 	gettimeofday(&(timer->start_real_time), NULL);
@@ -83,18 +99,31 @@ int main() {
 	memset(timer, 0, sizeof(Timer));
 	memset(lat, 0, sizeof(Latency));
 
-	cudaMalloc(&devPtr, BLOCK_SIZE);
+	if(cudaMalloc(&devPtr, BLOCK_SIZE) != CUDA_SUCCESS) {
+		printf("malloc failed\n");
+		exit(-1);
+	}
 
-	status = cuFileDriverOpen();
+	if(cuFileDriverOpen() != CU_FILE_SUCCESS) {
+		printf("driver open failed\n");
+		exit(-1);
+	}
 
-	fd = open(FILE_PATH, O_RDONLY);
+	fd = open(FILE_PATH, O_RDONLY | O_DIRECT, 0600);
+	printf("open file, fd is %d\n");
 
-	memset(&desc, 0, sizeof(CUfileDescr_t));
+	memset((void*)&desc, 0, sizeof(CUfileDescr_t));
 	desc.type = CU_FILE_HANDLE_TYPE_OPAQUE_FD;
 	desc.handle.fd = fd;
-	status = cuFileHandleRegister(&fh, &desc);
+	if(cuFileHandleRegister(&fh, &desc) != CU_FILE_SUCCESS) {
+		printf("file handle register failed\n");
+		exit(-1);
+	}
 
-	status = cuFileBufRegister(devPtr, BLOCK_SIZE, 0);
+	if(cuFileBufRegister(devPtr, BLOCK_SIZE, 0) != CU_FILE_SUCCESS) {
+		printf("file buf register failed\n");
+		exit(-1);
+	}
 
 	printf("Starting sequential read test...\n");
 	printf("File: %s\n", FILE_PATH);
