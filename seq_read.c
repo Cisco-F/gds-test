@@ -37,9 +37,9 @@ void timer_stop(Timer* timer) {
 static void update_latency_info(Latency* lat,
 	struct timeval start, struct timeval end) 
 {
-	double val; // us
-	val = end.tv_sec - start.tv_sec;
-	val += (end.tv_usec - start.tv_usec) / 1000000.0;
+	double val; // ms
+	val = (end.tv_sec - start.tv_sec) * 1000.0;
+	val += (end.tv_usec - start.tv_usec) / 1000.0;
 
 	if(val > lat->max) {
 		lat->max = val;
@@ -106,6 +106,10 @@ int main() {
 		struct timeval start, end;
 		gettimeofday(&start, NULL);
 		ssize_t ret = cuFileRead(fh, devPtr, BLOCK_SIZE, i * BLOCK_SIZE, 0);
+		if(ret != BLOCK_SIZE) {
+			printf("read failed! return %ld\n", ret);
+			exit(-1);
+		}
 		gettimeofday(&end, NULL);
 		update_latency_info(lat, start, end);
 	}
@@ -120,7 +124,7 @@ int main() {
 	// iops = total_blocks / time_used_ms * 1000;
 
 	printf("total time: %.2f ms\n", time_used_ms);
-	printf("bw is %.2f MB/s\n", bps);
+	printf("bw is %.2f MB/s\n", Mbps);
 	printf("average lat is %.2f ms\n", lat->avg / lat->count);
 	printf("max lat is %.2f ms\n", lat->max);
 	// printf("iops: %.2f\n", iops);
