@@ -6,7 +6,14 @@
 #include <string.h>
 #include <sys/time.h>
 #include <assert.h>
+
 #include <iostream>
+#include <cassert>
+#include <cstring>
+#include <random>
+#include <chrono>
+#include <fstream>
+#include <stdexcept>
 
 #include <cufile.h>
 #include <cuda.h>
@@ -15,7 +22,6 @@
 #define BLOCK_SIZE (128 * 1024)  // 128KB
 #define FILE_SIZE (10UL * 1024 * 1024 * 1024)  // 10GB
 #define FILE_PATH "/mnt/test/testfile"
-#define O_DIRECT 040000
 
 template<class T,
 	typename std::enable_if<std::is_integral<T>::value, std::nullptr_t>::type = nullptr>
@@ -55,11 +61,7 @@ typedef struct _thread_data {
 
 	int block_size;
 	void* dev_ptr;
-}
-
-static void init() {
-
-}
+} ThreadData;
 
 void timer_start(Timer* timer) {
 	gettimeofday(&(timer->start_real_time), NULL);
@@ -134,7 +136,7 @@ int main() {
 	memset((void*)&desc, 0, sizeof(CUfileDescr_t));
 	desc.type = CU_FILE_HANDLE_TYPE_OPAQUE_FD;
 	desc.handle.fd = fd;
-	status = cuFileHandleRegister(&fh, &desc)
+	status = cuFileHandleRegister(&fh, &desc);
 	if(status.err != CU_FILE_SUCCESS) {
 		std::cerr << cuFileGetErrorString(status) << std::endl;
 		printf("file handle register failed\n");
