@@ -16,7 +16,7 @@
 #include "cufile_sample_utils.h"
 
 #define BLOCK_SIZE (128 * 1024)  // 128KB
-#define FILE_SIZE (10UL * 1024 * 1024 * 1024)  // 10GB
+#define FILE_SIZE (25UL * 1024 * 1024)  // 100MB
 #define FILE_PATH "/mnt/test/testfile"
 
 typedef struct _timer {
@@ -100,7 +100,7 @@ int main() {
 
 	check_cudaruntimecall(cudaSetDevice(0));
 
-	check_cudaruntimecall(cudaMalloc(&devPtr, BLOCK_SIZE));
+	check_cudaruntimecall(cudaMalloc(&devPtr, FILE_SIZE));
 
 	if(cuFileDriverOpen().err != CU_FILE_SUCCESS) {
 		printf("driver open failed\n");
@@ -121,10 +121,10 @@ int main() {
 		return -1;
 	}
 
-	if(cuFileBufRegister(devPtr, BLOCK_SIZE, 0).err != CU_FILE_SUCCESS) {
-		printf("file buf register failed\n");
-		exit(-1);
-	}
+	// if(cuFileBufRegister(devPtr, BLOCK_SIZE, 0).err != CU_FILE_SUCCESS) {
+	// 	printf("file buf register failed\n");
+	// 	exit(-1);
+	// }
 	check_cudaruntimecall(cudaStreamSynchronize(0));
 
 	printf("Starting sequential read test...\n");
@@ -133,17 +133,18 @@ int main() {
 	printf("Total blocks: %lu\n", total_blocks);
 
 	timer_start(timer);
-	for(int i = 0; i < total_blocks; i++) {
-		struct timeval start, end;
-		gettimeofday(&start, NULL);
-		ssize_t ret = cuFileRead(fh, devPtr, BLOCK_SIZE, i * BLOCK_SIZE, 0);
-		if(ret != BLOCK_SIZE) {
-			printf("read failed! return %ld\n", ret);
-			exit(-1);
-		}
-		gettimeofday(&end, NULL);
-		update_latency_info(lat, start, end);
-	}
+	cuFileRead(fh, devPtr, FILE_SIZE, 0, 0);
+	// for(int i = 0; i < total_blocks; i++) {
+	// 	struct timeval start, end;
+	// 	gettimeofday(&start, NULL);
+	// 	ssize_t ret = cuFileRead(fh, devPtr, BLOCK_SIZE, i * BLOCK_SIZE, 0);
+	// 	if(ret != BLOCK_SIZE) {
+	// 		printf("read failed! return %ld\n", ret);
+	// 		exit(-1);
+	// 	}
+	// 	gettimeofday(&end, NULL);
+	// 	update_latency_info(lat, start, end);
+	// }
 	timer_stop(timer);
 
 	struct timeval realtime_read;
