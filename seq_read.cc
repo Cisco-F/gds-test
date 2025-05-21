@@ -1,23 +1,19 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <sys/time.h>
-#include <assert.h>
-
-#include <iostream>
-#include <cassert>
+#include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <random>
 #include <chrono>
-#include <fstream>
+#include <iostream>
 #include <stdexcept>
+#include <unistd.h>
+#include <fcntl.h>
+#include <assert.h>
 
 #include <cufile.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+
+#include "cufile_sample_utils.h"
 
 #define BLOCK_SIZE (128 * 1024)  // 128KB
 #define FILE_SIZE (10UL * 1024 * 1024 * 1024)  // 10GB
@@ -102,10 +98,9 @@ int main() {
 	memset(timer, 0, sizeof(Timer));
 	memset(lat, 0, sizeof(Latency));
 
-	if(cudaMalloc(&devPtr, BLOCK_SIZE) != CUDA_SUCCESS) {
-		printf("malloc failed\n");
-		exit(-1);
-	}
+	check_cudaruntimecall(cudaSetDevice(0));
+
+	check_cudaruntimecall(cudaMalloc(&devPtr, BLOCK_SIZE));
 
 	if(cuFileDriverOpen().err != CU_FILE_SUCCESS) {
 		printf("driver open failed\n");
@@ -120,15 +115,17 @@ int main() {
 	desc.handle.fd = fd;
 	status = cuFileHandleRegister(&fh, &desc);
 	if(status.err != CU_FILE_SUCCESS) {
-		std::cerr << cuFileGetErrorString(status) << std::endl;
-		printf("file handle register failed\n");
-		exit(-1);
+		std::cerr << "file register error: "
+			<< cuFileGetErrorString(status) << std::endl;
+		close(fd);
+		return -1;
 	}
 
 	if(cuFileBufRegister(devPtr, BLOCK_SIZE, 0).err != CU_FILE_SUCCESS) {
 		printf("file buf register failed\n");
 		exit(-1);
 	}
+	check_cudaruntimecall(cudaStreamSynchronize(0));
 
 	printf("Starting sequential read test...\n");
 	printf("File: %s\n", FILE_PATH);
