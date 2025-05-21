@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <sys/time.h>
 
 #include <cufile.h>
 #include <cuda.h>
