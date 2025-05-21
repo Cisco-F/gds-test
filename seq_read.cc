@@ -23,24 +23,6 @@
 #define FILE_SIZE (10UL * 1024 * 1024 * 1024)  // 10GB
 #define FILE_PATH "/mnt/test/testfile"
 
-template<class T,
-	typename std::enable_if<std::is_integral<T>::value, std::nullptr_t>::type = nullptr>
-std::string cuFileGetErrorString(T status) {
-	status = std::abs(status);
-	return IS_CUFILE_ERR(status) ?
-		std::string(CUFILE_ERRSTR(status)) : std::string(std::strerror(status));
-}
-
-// CUfileError_t
-template<class T,
-	typename std::enable_if<!std::is_integral<T>::value, std::nullptr_t>::type = nullptr>
-std::string cuFileGetErrorString(T status) {
-	std::string errStr = cuFileGetErrorString(static_cast<int>(status.err));
-	if (IS_CUDA_ERR(status))
-		errStr.append(".").append(GetCuErrorString(status.cu_err));
-	return errStr;
-}
-
 typedef struct _timer {
 	struct timeval start_real_time;
 	struct timeval end_real_time;
