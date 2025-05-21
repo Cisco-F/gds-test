@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <iostream>
 
 #include <cufile.h>
 #include <cuda.h>
@@ -15,6 +16,24 @@
 #define FILE_SIZE (10UL * 1024 * 1024 * 1024)  // 10GB
 #define FILE_PATH "/mnt/test/testfile"
 #define O_DIRECT 040000
+
+template<class T,
+	typename std::enable_if<std::is_integral<T>::value, std::nullptr_t>::type = nullptr>
+std::string cuFileGetErrorString(T status) {
+	status = std::abs(status);
+	return IS_CUFILE_ERR(status) ?
+		std::string(CUFILE_ERRSTR(status)) : std::string(std::strerror(status));
+}
+
+// CUfileError_t
+template<class T,
+	typename std::enable_if<!std::is_integral<T>::value, std::nullptr_t>::type = nullptr>
+std::string cuFileGetErrorString(T status) {
+	std::string errStr = cuFileGetErrorString(static_cast<int>(status.err));
+	if (IS_CUDA_ERR(status))
+		errStr.append(".").append(GetCuErrorString(status.cu_err));
+	return errStr;
+}
 
 typedef struct _timer {
 	struct timeval start_real_time;
@@ -104,23 +123,25 @@ int main() {
 		exit(-1);
 	}
 
-	if(cuFileDriverOpen() != CU_FILE_SUCCESS) {
+	if(cuFileDriverOpen().err != CU_FILE_SUCCESS) {
 		printf("driver open failed\n");
 		exit(-1);
 	}
 
 	fd = open(FILE_PATH, O_RDONLY | O_DIRECT, 0600);
-	printf("open file, fd is %d\n");
+	printf("open file, fd is %d\n", fd);
 
 	memset((void*)&desc, 0, sizeof(CUfileDescr_t));
 	desc.type = CU_FILE_HANDLE_TYPE_OPAQUE_FD;
 	desc.handle.fd = fd;
-	if(cuFileHandleRegister(&fh, &desc) != CU_FILE_SUCCESS) {
+	status = cuFileHandleRegister(&fh, &desc)
+	if(status.err != CU_FILE_SUCCESS) {
+		std::cerr << cuFileGetErrorString(status) << std::endl;
 		printf("file handle register failed\n");
 		exit(-1);
 	}
 
-	if(cuFileBufRegister(devPtr, BLOCK_SIZE, 0) != CU_FILE_SUCCESS) {
+	if(cuFileBufRegister(devPtr, BLOCK_SIZE, 0).err != CU_FILE_SUCCESS) {
 		printf("file buf register failed\n");
 		exit(-1);
 	}

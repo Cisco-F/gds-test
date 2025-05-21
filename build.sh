@@ -1,1 +1,1 @@
-nvcc -o test seq_read.c -lcufile
+nvcc -o test seq_read.cc -lcufile
