@@ -78,8 +78,8 @@ int main() {
 	struct timespec start, end;
 	double time_used_ms, bps, iops;
 	
-	Timer* timer;
-	Latency* lat;
+	Timer* timer = (Timer*)malloc(sizeof(Timer));
+	Latency* lat = (Latency*)malloc(sizeof(Latency));
 	memset(timer, 0, sizeof(Timer));
 	memset(lat, 0, sizeof(Latency));
 
@@ -113,7 +113,6 @@ int main() {
 
 	struct timeval realtime_read;
 	add_timer(&realtime_read, &timer->start_real_time, &timer->end_real_time);
-	// ms
 	time_used_ms = timeval_to_msec(realtime_read);
 
 	bps = (double)FILE_SIZE / time_used_ms * 1000;
